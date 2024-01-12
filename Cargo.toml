@@ -2,6 +2,7 @@
 members = [
     "src/rimca",
     "src/librimca",
+    "src/nizziel"
 ]
 
 [profile.release]

@@ -86,7 +86,6 @@ impl DownloadSequence for Instance<Vanilla> {
 
         let natives_dir = self.paths.get("natives")?;
 
-        // TODO 根据当前的系统类型选择正确的nav文件解压
         let os_type = std::env::consts::OS;
 
         for lib in &meta.libraries {
@@ -146,7 +145,6 @@ impl DownloadSequence for Instance<Vanilla> {
                 }
             }
         }
-
         Ok(dls)
     }
 
@@ -207,22 +205,33 @@ impl LaunchSequence for Instance<Vanilla> {
         Err(LaunchError::StateError(StateError::ComponentNotFound(String::from("net.minecraft"))))
     }
 
+    // 定义 `get_classpath` 函数，返回一个包含 String 或 LaunchError 的 Result。
     fn get_classpath(&self) -> Result<String, LaunchError> {
+        // 从对象的内部状态访问元数据和库路径。
         let meta = &self.inner.meta;
         let libraries = self.paths.get("libraries")?;
 
-        let mut classpath = String::with_capacity((libraries.to_str().unwrap().len() * meta.libraries.len())
-            + (meta.libraries.len() * 2)
-            + meta.libraries.iter().map(|lib| lib.downloads.artifact.as_ref().map_or(0, |a| a.path.len())).sum::<usize>()
+        // 初始化一个 String 类型的 classpath 变量，预分配足够的容量。
+        let mut classpath = String::with_capacity(
+            (libraries.to_str().unwrap().len() * meta.libraries.len())
+                + (meta.libraries.len() * 2)
+                + meta.libraries.iter().map(|lib| lib.downloads.artifact.as_ref().map_or(0, |a| a.path.len())).sum::<usize>()
         );
 
+        // 获取当前操作系统类型。
+        let os_type = std::env::consts::OS;
+
+        // 遍历元数据中的所有库。
         'outer: for lib in &meta.libraries {
+            // 如果库有规则，则检查这些规则。
             if let Some(rules) = &lib.rules {
                 for rule in rules {
                     if let Some(os) = &rule.os {
                         if let Some(name) = &os.name {
-                            if rule.action.eq("allow") && name.ne("linux") ||
-                                rule.action.eq("disallow") && name.eq("linux") {
+                            // 检查规则与当前操作系统是否匹配。
+                            let os_name = if name == "osx" { "macos" } else { name };
+                            if rule.action.eq("allow") && os_name.ne(os_type) ||
+                                rule.action.eq("disallow") && os_name.eq(os_type) {
                                 continue 'outer;
                             }
                         }
@@ -230,6 +239,7 @@ impl LaunchSequence for Instance<Vanilla> {
                 }
             }
 
+            // 如果库有下载的构件信息，将其路径添加到类路径中。
             if let Some(artifact) = &lib.downloads.artifact {
                 classpath.push_str(libraries.to_str().unwrap());
                 classpath.push('/');
@@ -238,11 +248,15 @@ impl LaunchSequence for Instance<Vanilla> {
             }
         }
 
+        // 构建 Minecraft 客户端 jar 文件的名称和路径，并将其添加到类路径中。
         let jar_name = format!("minecraft-{}-client.jar", meta.id);
         let jar_path = libraries.join("com").join("mojang").join("minecraft").join(meta.id.clone()).join(jar_name);
         classpath.push_str(jar_path.to_str().unwrap());
+
+        // 返回构建好的类路径。
         Ok(classpath)
     }
+
 
     fn get_jvm_arguments(&self, classpath: &str) -> Result<Vec<String>, LaunchError> {
         let natives_directory = self.paths.get("natives")?;

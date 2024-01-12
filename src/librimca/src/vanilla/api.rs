@@ -25,7 +25,7 @@ pub fn versions(snapshots: bool) -> Result<Vec<Version>, ApiError> {
 
     Ok(manifest.versions
         .into_iter()
-        .filter(|v| !(v.r#type.eq("snapshot")==true && !snapshots))
+        .filter(|v| !v.r#type.eq("snapshot") || snapshots)
         .collect())
 }
 

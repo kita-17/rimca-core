@@ -26,7 +26,7 @@ impl Fabric {
 
         let meta = {
             let path = paths.get("meta")?.join("net.fabricmc").join(format!("{}.json", &vanilla.inner.version.id));
-            if let Ok(file) = std::fs::File::open(&path) {
+            if let Ok(file) = std::fs::File::open(path) {
                 let reader = BufReader::new(file); 
                 serde_json::from_reader(reader)?               
             } else {
@@ -34,7 +34,7 @@ impl Fabric {
                     &api::META
                         .replace("{game_version}", &vanilla.inner.version.id)
                         .replace("{loader_version}", &version), 
-                    &paths.get("meta")?.join("net.fabricmc").join(&format!("{}.json", &version)), false)?;
+                    &paths.get("meta")?.join("net.fabricmc").join(format!("{}.json", &version)), false)?;
                 serde_json::from_slice(&meta_str)?
             }
         };
@@ -97,7 +97,7 @@ impl LaunchSequence for Instance<Fabric> {
         let mut classpath = self.inner.vanilla.get_classpath()?;
 
         let dir_name = self.paths.get("libraries")?;
-        classpath.push(':');
+        classpath.push(';');
         for lib in &self.inner.meta.libraries {
             let split = lib.name.split(':').collect::<Vec<&str>>();
             let path = format!("/{}/{}/{}/{}-{}.jar", 
