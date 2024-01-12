@@ -1,0 +1,14 @@
+[package]
+name = "rimca"
+version = "0.2.1"
+edition = "2021"
+
+[dependencies]
+librimca = { path = "../librimca" }
+structopt = "0.3.26"
+anyhow = "1.0.65"
+confy = "0.5.0"
+serde = "1.0.195"
+directories-next = "2.0.0"
+log = "0.4.20"
+simplelog = "0.12.0"
